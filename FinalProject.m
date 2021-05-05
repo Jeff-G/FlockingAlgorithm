@@ -17,14 +17,14 @@ function FinalProject()
                            %     bird spends on the convex hull of the flock
 
     % Constants used to compute acceleration at each time step
-    aMax     = 20; % Maximum acceleration (m/s^2)
-    aIdeal   = 3;  % Acceleration toward vIdeal at vMin/vMax (m/s^2)
-    aCenter  = 0.5;% Multiplied by the vector pointing to the center of all Voronoi neighbors
-    dRepulse = 2;  % Distance beyond which the repulsive acceleration is zero (m)
-    aRepulse = 1;  % Repulsion factor from nearby neighbors
-    aRandom  = 1;  % Variance of random acceleration along each axis (scalar or 1x3 row vector)
-    dAlign   = 4;  % Distance within which we begin trying to match alignment (m)
-    aAlign   = 0.2;% Multiplied by the vector that would fully align a bird to neighbors
+    aMax     = 20;  % Maximum acceleration (m/s^2)
+    aIdeal   = 3;   % Acceleration toward vIdeal at vMin/vMax (m/s^2)
+    aCenter  = 0.5; % Multiplied by the vector pointing to the center of all neighbors
+    dRepulse = 2;   % Distance beyond which the repulsive acceleration is zero (m)
+    aRepulse = 1;   % Repulsion factor from nearby neighbors
+    aRandom  = 1;   % Variance of random acceleration along each axis (scalar or 1x3 row vector)
+    dAlign   = 4;   % Distance within which we begin trying to match alignment (m)
+    aAlign   = 0.2; % Multiplied by the vector that would fully align a bird to neighbors
 
     % Altitude pressure
     hSpread = 20; % Distance from the ideal flight altitude (m) at which the acceleration
@@ -155,9 +155,11 @@ function FinalProject()
             [row, col] = find(neighbors == i);
             attractNeighbors = neighbors(sub2ind(size(neighbors), 3 - row, col));
 
-            % Compute the vector to the center of all neighbors
-            centerVec = mean(p(attractNeighbors, :) - p(i, :), 1);
-            nAccel(i, :) = aCenter * centerVec;
+            % Compute the acceleration toward the center of all neighbors
+            if (~isempty(attractNeighbors))
+                centerVec = mean(p(attractNeighbors, :) - p(i, :), 1);
+                nAccel(i, :) = aCenter * centerVec;
+            end
         end
 
         % Compute repulsion and alignment between flockmates
