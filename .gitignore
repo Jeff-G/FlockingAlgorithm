@@ -1,0 +1,6 @@
+# Ignore model outputs
+*.avi
+*.png
+
+# Ignore temporary MATLAB files
+*.asv
