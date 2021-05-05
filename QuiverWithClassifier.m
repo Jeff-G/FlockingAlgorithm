@@ -6,13 +6,13 @@
 %        An empty vector or scalar is assumed to indicate no classification.
 function QuiverWithClassifier(ax, p, v, cat)
     classes = unique(cat);
-    if (len(classes) <= 1)
+    if (length(classes) <= 1)
         % Plot all points without regard to classification
         quiver3(ax, p(:, 1), p(:, 2), p(:, 3), ...
             v(:, 1), v(:, 2), v(:, 3), 'AutoScale', false);
     else
         % Iterate over each class
-        for class = classes
+        for class = classes.'
             % Get the points and velocities in this class
             isInClass = (cat == class);
             pInClass = p(isInClass, :);

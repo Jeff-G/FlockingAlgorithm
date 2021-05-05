@@ -1,17 +1,18 @@
+%#ok<*NASGU>
 %#ok<*UNRCH>
 function FinalProject()
     % Model Constants
     N       = 200; % Flock size
     deltaT  = 0.1; % Discrete model time step (s)
-    finalT  = 240; % Simulation length (s)
+    finalT  = 120; % Simulation length (s)
 
     % Output settings
     traceN        = 3;     % Prints a trace for the first N points
-    traceT        = 10;    % Maximum trace length (s)
+    traceT        = inf;   % Maximum trace length (s)
     connectN      = 1;     % Connects the first N points to all of their neighbors
     identConvHull = true;  % Whether to uniquely draw birds on the convex hull
-    genVideo      = false; % Whether to generate a video of the resulting simulation
-    genFinalFrame = false; % Whether to save the final frame as an image
+    genVideo      = true;  % Whether to generate a video of the resulting simulation
+    genFinalFrame = true;  % Whether to save the final frame as an image
     genHullHist   = true;  % Whether to generate a histogram of the amount of time each
                            %     bird spends on the convex hull of the flock
 
@@ -21,7 +22,7 @@ function FinalProject()
     aCenter  = 0.5;% Multiplied by the vector pointing to the center of all Voronoi neighbors
     dRepulse = 2;  % Distance beyond which the repulsive acceleration is zero (m)
     aRepulse = 1;  % Repulsion factor from nearby neighbors
-    aRandom  = 1;  % Variance of random acceleration along each axis
+    aRandom  = 1;  % Variance of random acceleration along each axis (scalar or 1x3 row vector)
     dAlign   = 4;  % Distance within which we begin trying to match alignment (m)
     aAlign   = 0.2;% Multiplied by the vector that would fully align a bird to neighbors
 
@@ -90,10 +91,19 @@ function FinalProject()
     %No2 = floor(N / 2);
     %p(1:No2, 2) = p(1:No2, 2) + 40;
 
+    % Get a string that includes the number of points and duration
+    if (mod(finalT, 60) == 0)
+        modelLen = sprintf('%dm', finalT / 60);
+    else
+        modelLen = sprintf('%ds', finalT);
+    end
+    modelStats = sprintf('%d@%s', N, modelLen);
+    plotFileName = ['Birds Flocking (' modelStats ')'];
+
     % Create the axis and video
     if (genVideo || genFinalFrame)
         % Create the axis with fixed bounds
-        fig = figure('Position', [0 0 1080 1080]); %#ok<NASGU>
+        fig = figure('Position', [0 0 1080 1080]);
         ax = gca;
         axis(ax, 8 * [-1, 1, -1, 1, -1, 1]);
         axis(ax, 'equal');
@@ -108,7 +118,7 @@ function FinalProject()
 
         % Create a video of the flocking
         if (genVideo)
-            video = VideoWriter('Birds Flocking.avi');
+            video = VideoWriter([plotFileName '.avi']);
             video.FrameRate = 1 / deltaT;
             open(video);
         end
@@ -241,7 +251,7 @@ function FinalProject()
     % Save the final frame of the animation as an image
     if (genFinalFrame)
         TightenAxis(ax);
-        saveas(fig, 'Birds Flocking.png', 'png');
+        saveas(fig, [plotFileName '.png'], 'png');
     end
 
     % Plot the fraction of time each bird spent on the convex hull
@@ -251,18 +261,35 @@ function FinalProject()
         [fig, ax] = CreateAxis(histTitle);
         subtitle(ax, 'Amount of Time Each Bird Spent on the Flock''s Convex Hull', ...
             'FontSize', 16);
-        xlabel(ax, 'Time Exposed to Predation (%)', 'FontSize', 16, 'FontWeight', 'bold');
+        xlabel(ax, sprintf('Time Exposed to Predation (%% of %s)', modelLen), ...
+            'FontSize', 16, 'FontWeight', 'bold');
         ylabel(ax, sprintf('Birds (%d Total)', N), 'FontSize', 16, 'FontWeight', 'bold');
 
         % Plot the histogram of exposure to predation
         hullData = 100 * mean(isOnHull, 2);
         histHandle = histogram(ax, hullData);
         xMax = histHandle.BinWidth * ceil(max(hullData) / histHandle.BinWidth);
-        xlim([0 xMax]);
+        xlim(ax, [0 xMax]);
         set(ax, 'XTick', 0:histHandle.BinWidth:xMax);
+
+        % Compute and add the mean and standard deviation
+        avgOnHull = mean(hullData);
+        stdOnHull = std(hullData);
+        yMax = ax.YLim(2);
+        errorbar(ax, avgOnHull, 0.97 * yMax, stdOnHull, 'horizontal', 'o', ...
+            'MarkerSize', 20, 'LineWidth', 2, 'CapSize', 20);
+        extraText = { ...
+            '\mu'   , sprintf(' = %.2f%%', avgOnHull); ...
+            '\sigma', sprintf(' = %.2f%%', stdOnHull)};
+        for i = 1:size(extraText, 1)
+            text(ax, 0.01 * xMax, (1.03 - 0.04 * i) * yMax, extraText{i, 1}, ...
+                'FontSize', 14, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
+            text(ax, 0.02 * xMax, (1.03 - 0.04 * i) * yMax, extraText{i, 2}, ...
+                'FontSize', 14, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top');
+        end
 
         % Save the image
         TightenAxis(ax);
-        saveas(fig, [histTitle '.png'], 'png');
+        saveas(fig, [histTitle ' (' modelStats ').png'], 'png');
     end
 end
